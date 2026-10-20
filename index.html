@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Science Madness - Interactive Educational Lab</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        rajdhani: ['Rajdhani', 'sans-serif'],
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        science: {
+                            green: '#10b981',
+                            cyan: '#06b6d4',
+                            purple: '#8b5cf6',
+                            pink: '#ec4899',
+                            yellow: '#f59e0b',
+                            dark: '#090d16'
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'spin-slow': 'spin 12s linear infinite',
+                        'glow': 'glow 2s ease-in-out infinite alternate',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        glow: {
+                            '0%': { filter: 'drop-shadow(0 0 5px rgba(6, 182, 212, 0.6))' },
+                            '100%': { filter: 'drop-shadow(0 0 20px rgba(139, 92, 246, 0.9))' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom styles & scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #090d16;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+        
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+            border-color: rgba(6, 182, 212, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(6, 182, 212, 0.25);
+        }
+
+        .neon-border-cyan {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
+            border: 1px solid rgba(6, 182, 212, 0.6);
+        }
+
+        .neon-border-purple {
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
+            border: 1px solid rgba(139, 92, 246, 0.6);
+        }
+
+        .neon-text-green {
+            text-shadow: 0 0 10px rgba(16, 185, 129, 0.7);
+        }
+        .neon-text-cyan {
+            text-shadow: 0 0 10px rgba(6, 182, 212, 0.7);
+        }
+
+        /* Certificate Print styling */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printable-certificate, #printable-certificate * {
+                visibility: visible;
+            }
+            #printable-certificate {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background: white !important;
+                color: black !important;
+            }
+        }
+    </style>
+</head>
+<body class="h-full font-sans text-slate-100 overflow-x-hidden select-none bg-slate-950">
+
+    <!-- Background Canvas for Animated Lab Atoms, Bubbles, and Energy Grid -->
+    <canvas id="bg-canvas" class="fixed inset-0 pointer-events-none z-0 opacity-40"></canvas>
+
+    <!-- Main Container -->
+    <div id="app" class="relative z-10 min-h-screen flex flex-col justify-between p-3 sm:p-6 max-w-7xl mx-auto">
+        
+        <!-- Header Bar -->
+        <header class="glass-panel rounded-2xl p-4 mb-6 flex flex-wrap justify-between items-center gap-4 border-b border-cyan-500/20 shadow-xl">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-cyan-600 to-purple-600 flex items-center justify-center text-2xl shadow-lg shadow-cyan-500/20 animate-pulse-slow">
+                    <i class="fa-solid font-bold fa-flask-vial text-white"></i>
+                </div>
+                <div>
+                    <h1 class="font-orbitron font-black text-xl sm:text-2xl bg-gradient-to-r from-cyan-400 via-teal-300 to-purple-400 bg-clip-text text-transparent tracking-wider">
+                        SCIENCE MADNESS
+                    </h1>
+                    <p class="text-xs text-slate-400 font-rajdhani tracking-widest uppercase">Mad Scientist Educational Lab v2.5</p>
+                </div>
+            </div>
+
+            <!-- Profile Info Badge (Visible when registered) -->
+            <div id="profile-badge-display" class="hidden flex items-center gap-4 bg-slate-900/80 px-4 py-2 rounded-xl border border-slate-700/60">
+                <div class="flex items-center gap-3">
+                    <div id="badge-avatar-icon" class="w-10 h-10 rounded-full bg-cyan-950 border border-cyan-500 flex items-center justify-center text-cyan-400 text-lg">
+                        <i class="fa-solid fa-user-astronaut"></i>
+                    </div>
+                    <div class="text-xs">
+                        <div class="flex items-center gap-2">
+                            <span id="display-player-name" class="font-bold text-cyan-300 text-sm">Assistant</span>
+                            <span id="display-player-grade" class="px-2 py-0.5 rounded bg-purple-900/80 text-purple-200 text-[10px] font-semibold">Grade 7</span>
+                        </div>
+                        <p id="display-player-section" class="text-slate-400">Section: Einstein</p>
+                    </div>
+                </div>
+                <div class="h-8 w-px bg-slate-700 mx-1"></div>
+                <div class="text-right">
+                    <div class="text-[10px] text-slate-400 uppercase tracking-wider">Lab Points</div>
+                    <div id="display-score" class="font-orbitron font-bold text-amber-400 text-base">0 PTS</div>
+                </div>
+                <button id="sound-toggle-btn" onclick="gameEngine.toggleSound()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-300 transition" title="Toggle Sound">
+                    <i id="sound-icon" class="fa-solid fa-volume-high text-cyan-400"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- SCREEN 0: REGISTRATION / STUDENT ADMISSION -->
+        <main id="screen-registration" class="flex-1 flex items-center justify-center py-6">
+            <div class="glass-panel w-full max-w-xl rounded-3xl p-6 sm:p-10 shadow-2xl border border-cyan-500/30 relative overflow-hidden">
+                <div class="absolute -right-16 -top-16 w-40 h-40 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none"></div>
+                <div class="absolute -left-16 -bottom-16 w-40 h-40 bg-purple-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+                <div class="text-center mb-8">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-cyan-950 border border-cyan-500/40 text-cyan-400 text-3xl mb-4 shadow-lg shadow-cyan-500/20">
+                        <i class="fa-solid fa-id-card-clip"></i>
+                    </div>
+                    <h2 class="font-orbitron text-2xl sm:text-3xl font-extrabold text-white tracking-wide">LAB ASSISTANT BADGE</h2>
+                    <p class="text-slate-400 text-sm mt-2">Enter your credentials to unlock Dr. Atom's Science Madness Lab!</p>
+                </div>
+
+                <form id="registration-form" onsubmit="gameEngine.handleRegister(event)" class="space-y-5">
+                    <!-- Student Name -->
+                    <div>
+                        <label for="student-name" class="block text-xs font-semibold text-cyan-300 uppercase tracking-wider mb-2">
+                            <i class="fa-solid fa-user text-cyan-400 mr-1"></i> Full Name / Student Name
+                        </label>
+                        <input type="text" id="student-name" required placeholder="e.g. Marie Curie" 
+                            class="w-full bg-slate-900/90 border border-slate-700 focus:border-cyan-400 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 transition">
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Grade Level -->
+                        <div>
+                            <label for="student-grade" class="block text-xs font-semibold text-cyan-300 uppercase tracking-wider mb-2">
+                                <i class="fa-solid fa-graduation-cap text-cyan-400 mr-1"></i> Grade Level
+                            </label>
+                            <select id="student-grade" required 
+                                class="w-full bg-slate-900/90 border border-slate-700 focus:border-cyan-400 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/30 transition cursor-pointer">
+                                <option value="" disabled selected>Select Grade</option>
+                                <option value="Grade 4">Grade 4</option>
+                                <option value="Grade 5">Grade 5</option>
+                                <option value="Grade 6">Grade 6</option>
+                                <option value="Grade 7">Grade 7</option>
+                                <option value="Grade 8">Grade 8</option>
+                                <option value="Grade 9">Grade 9</option>
+                                <option value="Grade 10">Grade 10</option>
+                                <option value="Grade 11">Grade 11</option>
+                                <option value="Grade 12">Grade 12</option>
+                            </select>
+                        </div>
+
+                        <!-- Section -->
+                        <div>
+                            <label for="student-section" class="block text-xs font-semibold text-cyan-300 uppercase tracking-wider mb-2">
+                                <i class="fa-solid fa-users text-cyan-400 mr-1"></i> Class Section
+                            </label>
+                            <input type="text" id="student-section" required placeholder="e.g. Einstein / Section A" 
+                                class="w-full bg-slate-900/90 border border-slate-700 focus:border-cyan-400 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 transition">
+                        </div>
+                    </div>
+
+                    <!-- Avatar Selection -->
+                    <div>
+                        <label class="block text-xs font-semibold text-cyan-300 uppercase tracking-wider mb-2">
+                            <i class="fa-solid fa-mask text-cyan-400 mr-1"></i> Choose Lab Specialization Avatar
+                        </label>
+                        <div class="grid grid-cols-4 gap-3">
+                            <button type="button" onclick="gameEngine.selectAvatar('fa-user-astronaut', this)" class="avatar-btn p-3 rounded-xl bg-slate-900 border-2 border-cyan-500 text-cyan-400 flex flex-col items-center justify-center gap-1 hover:bg-slate-800 transition">
+                                <i class="fa-solid fa-user-astronaut text-xl"></i>
+                                <span class="text-[10px]">Astro</span>
+                            </button>
+                            <button type="button" onclick="gameEngine.selectAvatar('fa-user-nurse', this)" class="avatar-btn p-3 rounded-xl bg-slate-900 border-2 border-transparent hover:border-slate-600 text-slate-400 flex flex-col items-center justify-center gap-1 hover:bg-slate-800 transition">
+                                <i class="fa-solid fa-user-nurse text-xl"></i>
+                                <span class="text-[10px]">Bio</span>
+                            </button>
+                            <button type="button" onclick="gameEngine.selectAvatar('fa-user-ninja', this)" class="avatar-btn p-3 rounded-xl bg-slate-900 border-2 border-transparent hover:border-slate-600 text-slate-400 flex flex-col items-center justify-center gap-1 hover:bg-slate-800 transition">
+                                <i class="fa-solid fa-user-ninja text-xl"></i>
+                                <span class="text-[10px]">Chem</span>
+                            </button>
+                            <button type="button" onclick="gameEngine.selectAvatar('fa-user-gear', this)" class="avatar-btn p-3 rounded-xl bg-slate-900 border-2 border-transparent hover:border-slate-600 text-slate-400 flex flex-col items-center justify-center gap-1 hover:bg-slate-800 transition">
+                                <i class="fa-solid fa-user-gear text-xl"></i>
+                                <span class="text-[10px]">Physic</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full py-4 rounded-xl bg-gradient-to-r from-cyan-500 via-teal-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 font-orbitron font-bold text-white text-base tracking-widest shadow-lg shadow-cyan-500/25 transition transform active:scale-95 flex items-center justify-center gap-2 mt-6">
+                        <span>INITIALIZE LAB EXPERIENCE</span>
+                        <i class="fa-solid fa-bolt"></i>
+                    </button>
+                </form>
+            </div>
+        </main>
+
+        <!-- SCREEN 1: LAB DASHBOARD & STATIONS -->
+        <main id="screen-hub" class="hidden flex-1 flex flex-col justify-center">
+            <!-- Scientist Dialogue Header -->
+            <div class="glass-panel p-5 rounded-2xl mb-8 flex flex-col md:flex-row items-center gap-5 border-l-4 border-l-cyan-400">
+                <div class="relative shrink-0">
+                    <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-purple-600 to-pink-500 flex items-center justify-center text-3xl text-white shadow-lg animate-bounce">
+                        <i class="fa-solid fa-flask-gear"></i>
+                    </div>
+                    <span class="absolute bottom-0 right-0 w-4 h-4 bg-emerald-500 border-2 border-slate-900 rounded-full"></span>
+                </div>
+                <div class="flex-1 text-center md:text-left">
+                    <div class="flex items-center justify-center md:justify-start gap-2 mb-1">
+                        <h3 class="font-orbitron font-bold text-cyan-300">DR. ATOM'S LAB BRIEFING</h3>
+                        <span class="text-[10px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 font-mono">CORE STATUS: ACTIVE</span>
+                    </div>
+                    <p id="hub-briefing-text" class="text-slate-300 text-sm">
+                        Welcome aboard, Assistant! Master all 4 Science Stations to earn research points, unlock the Master Blitz Quiz, and claim your official Lab Assistant Certificate!
+                    </p>
+                </div>
+            </div>
+
+            <!-- Science Stations Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <!-- Station 1: Chemistry -->
+                <div class="glass-card rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden group">
+                    <div class="absolute -right-8 -bottom-8 text-cyan-500/10 text-8xl group-hover:scale-110 transition duration-500">
+                        <i class="fa-solid fa-vial-circle-check"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="w-12 h-12 rounded-xl bg-cyan-950 border border-cyan-500/40 text-cyan-400 flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                                <i class="fa-solid fa-flask"></i>
+                            </span>
+                            <span id="badge-status-chem" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+                                Pending
+                            </span>
+                        </div>
+                        <h4 class="font-orbitron font-bold text-lg text-cyan-300 mb-1">CHEMISTRY LAB</h4>
+                        <p class="text-slate-400 text-xs mb-4">Mix chemical elements, balance molecular reactions, and create compounds without blowing up the beaker!</p>
+                    </div>
+                    <button onclick="gameEngine.startModule('chem')" class="w-full py-2.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500 text-cyan-300 hover:text-white border border-cyan-500/50 font-bold text-xs tracking-wider uppercase transition">
+                        Launch Chemistry <i class="fa-solid fa-arrow-right ml-1"></i>
+                    </button>
+                </div>
+
+                <!-- Station 2: Physics -->
+                <div class="glass-card rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden group">
+                    <div class="absolute -right-8 -bottom-8 text-purple-500/10 text-8xl group-hover:scale-110 transition duration-500">
+                        <i class="fa-solid fa-atom"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="w-12 h-12 rounded-xl bg-purple-950 border border-purple-500/40 text-purple-400 flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                                <i class="fa-solid fa-bolt"></i>
+                            </span>
+                            <span id="badge-status-phys" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+                                Pending
+                            </span>
+                        </div>
+                        <h4 class="font-orbitron font-bold text-lg text-purple-300 mb-1">PHYSICS OPTICS</h4>
+                        <p class="text-slate-400 text-xs mb-4">Reflect lasers with optical mirrors, harness gravity angles, and power up the energy core!</p>
+                    </div>
+                    <button onclick="gameEngine.startModule('phys')" class="w-full py-2.5 rounded-xl bg-purple-500/20 hover:bg-purple-500 text-purple-300 hover:text-white border border-purple-500/50 font-bold text-xs tracking-wider uppercase transition">
+                        Launch Physics <i class="fa-solid fa-arrow-right ml-1"></i>
+                    </button>
+                </div>
+
+                <!-- Station 3: Biology -->
+                <div class="glass-card rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden group">
+                    <div class="absolute -right-8 -bottom-8 text-emerald-500/10 text-8xl group-hover:scale-110 transition duration-500">
+                        <i class="fa-solid fa-dna"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="w-12 h-12 rounded-xl bg-emerald-950 border border-emerald-500/40 text-emerald-400 flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                                <i class="fa-solid fa-dna"></i>
+                            </span>
+                            <span id="badge-status-bio" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+                                Pending
+                            </span>
+                        </div>
+                        <h4 class="font-orbitron font-bold text-lg text-emerald-300 mb-1">BIOLOGY & DNA</h4>
+                        <p class="text-slate-400 text-xs mb-4">Sequence nucleic DNA bases (A-T, C-G) under time pressure to synthesize life-saving vaccines!</p>
+                    </div>
+                    <button onclick="gameEngine.startModule('bio')" class="w-full py-2.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500 text-emerald-300 hover:text-white border border-emerald-500/50 font-bold text-xs tracking-wider uppercase transition">
+                        Launch Biology <i class="fa-solid fa-arrow-right ml-1"></i>
+                    </button>
+                </div>
+
+                <!-- Station 4: Astronomy -->
+                <div class="glass-card rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden group">
+                    <div class="absolute -right-8 -bottom-8 text-amber-500/10 text-8xl group-hover:scale-110 transition duration-500">
+                        <i class="fa-solid fa-shuttle-space"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="w-12 h-12 rounded-xl bg-amber-950 border border-amber-500/40 text-amber-400 flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                                <i class="fa-solid fa-planet"></i>
+                            </span>
+                            <span id="badge-status-astro" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+                                Pending
+                            </span>
+                        </div>
+                        <h4 class="font-orbitron font-bold text-lg text-amber-300 mb-1">ASTRONOMY ORBIT</h4>
+                        <p class="text-slate-400 text-xs mb-4">Balance gravitational velocities to launch satellites into stable orbital trajectories around planets!</p>
+                    </div>
+                    <button onclick="gameEngine.startModule('astro')" class="w-full py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-white border border-amber-500/50 font-bold text-xs tracking-wider uppercase transition">
+                        Launch Astronomy <i class="fa-solid fa-arrow-right ml-1"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quiz & Certificate Bar -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Master Quiz Callout -->
+                <div class="glass-panel rounded-2xl p-6 flex items-center justify-between gap-4 border border-indigo-500/30">
+                    <div>
+                        <span class="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">Final Assessment</span>
+                        <h4 class="font-orbitron font-bold text-xl text-white mt-1">SCIENCE MADNESS BLITZ QUIZ</h4>
+                        <p class="text-slate-400 text-xs mt-1">Test your overall science knowledge across physics, chemistry, biology & earth science.</p>
+                    </div>
+                    <button onclick="gameEngine.startQuiz()" class="px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 font-orbitron font-bold text-white text-xs tracking-wider uppercase shadow-lg shrink-0">
+                        Take Quiz <i class="fa-solid fa-brain ml-1"></i>
+                    </button>
+                </div>
+
+                <!-- Certificate Station -->
+                <div class="glass-panel rounded-2xl p-6 flex items-center justify-between gap-4 border border-amber-500/30">
+                    <div>
+                        <span class="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800">Reward Center</span>
+                        <h4 class="font-orbitron font-bold text-xl text-white mt-1">ASSISTANT CERTIFICATE</h4>
+                        <p class="text-slate-400 text-xs mt-1">Generate your official personalized printable lab certificate once you earn points!</p>
+                    </div>
+                    <button onclick="gameEngine.viewCertificate()" class="px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 font-orbitron font-bold text-white text-xs tracking-wider uppercase shadow-lg shrink-0">
+                        View Badge <i class="fa-solid fa-award ml-1"></i>
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- SCREEN 2: CHEMISTRY MODULE -->
+        <main id="screen-chem" class="hidden flex-1 flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <button onclick="gameEngine.returnToHub()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-left"></i> Back to Hub
+                </button>
+                <div class="text-right">
+                    <span class="text-xs text-cyan-400 font-mono">CHEMISTRY LAB EXPERIMENT</span>
+                    <h2 class="font-orbitron text-xl font-bold text-white">Compound Element Synthesizer</h2>
+                </div>
+            </div>
+
+            <div class="glass-panel flex-1 rounded-3xl p-6 flex flex-col justify-between border border-cyan-500/30 relative">
+                <!-- Target Formula Directive -->
+                <div class="bg-slate-900/90 rounded-2xl p-4 border border-cyan-500/20 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div>
+                        <span class="text-[10px] uppercase tracking-widest text-slate-400">Target Reaction Task</span>
+                        <h3 id="chem-target-title" class="font-orbitron text-lg font-bold text-cyan-300">Synthesize Water (H₂O)</h3>
+                        <p id="chem-target-desc" class="text-slate-300 text-xs">Combine Hydrogen and Oxygen atoms in the correct chemical ratio!</p>
+                    </div>
+                    <div class="flex items-center gap-2 font-mono text-xs bg-slate-950 px-4 py-2 rounded-xl border border-slate-800">
+                        <span class="text-slate-400">Recipe:</span>
+                        <span id="chem-target-recipe" class="text-amber-400 font-bold">2 Hydrogen (H) + 1 Oxygen (O)</span>
+                    </div>
+                </div>
+
+                <!-- Mixing Flask Visual Canvas/Container -->
+                <div class="my-6 flex-1 min-h-[220px] flex flex-col items-center justify-center relative bg-slate-950/60 rounded-2xl border border-slate-800 p-6 overflow-hidden">
+                    <!-- Animated Flask SVG -->
+                    <div class="relative w-36 h-48 flex items-end justify-center">
+                        <div id="chem-flask-liquid" class="w-28 h-20 bg-cyan-500/40 rounded-b-3xl transition-all duration-700 relative overflow-hidden border-b-2 border-cyan-300">
+                            <div class="absolute inset-0 bg-gradient-to-t from-cyan-600/60 to-teal-400/20"></div>
+                            <!-- Bubbles Container -->
+                            <div id="chem-bubbles" class="absolute inset-0 pointer-events-none"></div>
+                        </div>
+                        <i class="fa-solid fa-flask text-9xl text-slate-300/30 absolute inset-0 flex items-center justify-center pointer-events-none"></i>
+                    </div>
+
+                    <!-- Elements Added Visual Stack -->
+                    <div id="chem-current-elements" class="mt-4 flex items-center gap-2 flex-wrap justify-center min-h-[36px]">
+                        <span class="text-xs text-slate-500 italic">No elements in beaker yet...</span>
+                    </div>
+                </div>
+
+                <!-- Element Selection Buttons -->
+                <div>
+                    <p class="text-xs text-slate-400 mb-3 text-center uppercase tracking-widest">Select Elements to Add to Reaction Flask:</p>
+                    <div id="chem-element-buttons" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                        <!-- Hydro, Oxy, Carbon, Sodium buttons generated via JS -->
+                    </div>
+                    <div class="flex gap-3">
+                        <button onclick="chemModule.clearFlask()" class="w-1/3 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 font-bold text-xs text-slate-300 transition">
+                            <i class="fa-solid fa-trash-can mr-1"></i> Clear Flask
+                        </button>
+                        <button onclick="chemModule.react()" class="w-2/3 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 font-orbitron font-bold text-xs text-white uppercase tracking-wider shadow-lg shadow-cyan-500/20 transition">
+                            <i class="fa-solid fa-fire-burner mr-1"></i> Initiate Chemical Reaction
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- SCREEN 3: PHYSICS MODULE -->
+        <main id="screen-phys" class="hidden flex-1 flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <button onclick="gameEngine.returnToHub()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-left"></i> Back to Hub
+                </button>
+                <div class="text-right">
+                    <span class="text-xs text-purple-400 font-mono">PHYSICS & OPTICS</span>
+                    <h2 class="font-orbitron text-xl font-bold text-white">Laser Mirror Reflector</h2>
+                </div>
+            </div>
+
+            <div class="glass-panel flex-1 rounded-3xl p-5 flex flex-col border border-purple-500/30">
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-3 mb-4 bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                    <div>
+                        <span class="text-xs text-purple-300 font-bold">Goal:</span>
+                        <span class="text-xs text-slate-300 ml-1">Rotate the optical mirror so the laser beam hits the Target Sensor!</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="text-xs font-mono text-slate-400">
+                            Mirror Angle: <span id="mirror-angle-val" class="text-cyan-400 font-bold">45°</span>
+                        </div>
+                        <button onclick="physModule.fireLaser()" class="px-4 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md">
+                            <i class="fa-solid fa-bolt mr-1"></i> Pulse Laser
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Laser Canvas Puzzle -->
+                <div class="flex-1 relative bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden min-h-[300px]">
+                    <canvas id="phys-canvas" class="w-full h-full block cursor-pointer"></canvas>
+                </div>
+
+                <!-- Mirror Controls -->
+                <div class="mt-4 flex items-center justify-between gap-4 bg-slate-900/90 p-4 rounded-xl border border-slate-800">
+                    <button onclick="physModule.adjustMirror(-15)" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold text-xs">
+                        <i class="fa-solid fa-rotate-left mr-1"></i> Rotate Left (-15°)
+                    </button>
+                    <input type="range" id="mirror-slider" min="0" max="180" value="45" oninput="physModule.setMirrorAngle(this.value)" class="flex-1 accent-purple-500 cursor-pointer">
+                    <button onclick="physModule.adjustMirror(15)" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold text-xs">
+                        Rotate Right (+15°) <i class="fa-solid fa-rotate-right ml-1"></i>
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- SCREEN 4: BIOLOGY MODULE -->
+        <main id="screen-bio" class="hidden flex-1 flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <button onclick="gameEngine.returnToHub()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-left"></i> Back to Hub
+                </button>
+                <div class="text-right">
+                    <span class="text-xs text-emerald-400 font-mono">BIOLOGY & GENETICS</span>
+                    <h2 class="font-orbitron text-xl font-bold text-white">DNA Base Pair Sequencer</h2>
+                </div>
+            </div>
+
+            <div class="glass-panel flex-1 rounded-3xl p-6 flex flex-col justify-between border border-emerald-500/30">
+                <div class="bg-slate-900/90 p-4 rounded-2xl border border-emerald-500/20 flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div>
+                        <span class="text-[10px] text-slate-400 uppercase font-mono">Genetics Rule</span>
+                        <h3 class="font-orbitron text-base font-bold text-emerald-300">Complementary Base Pairing Rule</h3>
+                        <p class="text-xs text-slate-300">Adenine (A) pairs with Thymine (T) | Cytosine (C) pairs with Guanine (G)</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-[10px] text-slate-400 uppercase">Sequenced Pairs</div>
+                        <div id="bio-pairs-count" class="font-orbitron font-bold text-emerald-400 text-xl">0 / 5</div>
+                    </div>
+                </div>
+
+                <!-- DNA Sequence Display -->
+                <div class="my-6 flex-1 flex flex-col items-center justify-center bg-slate-950/70 rounded-2xl p-6 border border-slate-800">
+                    <p class="text-xs text-slate-400 mb-2 font-mono">CURRENT TEMPLATE STRAND BASE:</p>
+                    <div id="bio-current-base" class="w-24 h-24 rounded-2xl bg-slate-900 border-2 border-emerald-500 flex items-center justify-center text-5xl font-orbitron font-black text-emerald-400 shadow-lg shadow-emerald-500/20 mb-6">
+                        A
+                    </div>
+                    <p class="text-xs text-slate-400 mb-4">Click the matching complementary nucleic base button below:</p>
+
+                    <!-- Base Pairing Buttons -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full max-w-md">
+                        <button onclick="bioModule.pair('A')" class="py-4 rounded-xl bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/50 text-cyan-300 font-orbitron font-bold text-xl transition active:scale-95">
+                            A (Adenine)
+                        </button>
+                        <button onclick="bioModule.pair('T')" class="py-4 rounded-xl bg-amber-950 hover:bg-amber-900 border border-amber-500/50 text-amber-300 font-orbitron font-bold text-xl transition active:scale-95">
+                            T (Thymine)
+                        </button>
+                        <button onclick="bioModule.pair('C')" class="py-4 rounded-xl bg-purple-950 hover:bg-purple-900 border border-purple-500/50 text-purple-300 font-orbitron font-bold text-xl transition active:scale-95">
+                            C (Cytosine)
+                        </button>
+                        <button onclick="bioModule.pair('G')" class="py-4 rounded-xl bg-emerald-950 hover:bg-emerald-900 border border-emerald-500/50 text-emerald-300 font-orbitron font-bold text-xl transition active:scale-95">
+                            G (Guanine)
+                        </button>
+                    </div>
+                </div>
+
+                <div id="bio-feedback" class="text-center text-xs font-mono text-slate-400 min-h-[20px]">
+                    Select the matching base to complete the DNA helix strand!
+                </div>
+            </div>
+        </main>
+
+        <!-- SCREEN 5: ASTRONOMY MODULE -->
+        <main id="screen-astro" class="hidden flex-1 flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <button onclick="gameEngine.returnToHub()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-left"></i> Back to Hub
+                </button>
+                <div class="text-right">
+                    <span class="text-xs text-amber-400 font-mono">ASTRONOMY & GRAVITY</span>
+                    <h2 class="font-orbitron text-xl font-bold text-white">Orbital Velocity Balance</h2>
+                </div>
+            </div>
+
+            <div class="glass-panel flex-1 rounded-3xl p-5 flex flex-col border border-amber-500/30">
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-3 mb-4 bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                    <div>
+                        <span class="text-xs text-amber-300 font-bold">Objective:</span>
+                        <span class="text-xs text-slate-300 ml-1">Adjust Satellite Orbital Speed to enter the highlighted green Orbit Zone!</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span id="astro-status-text" class="text-xs font-mono text-slate-400">Velocity Status: Off-Orbit</span>
+                    </div>
+                </div>
+
+                <!-- Astronomy Canvas -->
+                <div class="flex-1 relative bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden min-h-[300px]">
+                    <canvas id="astro-canvas" class="w-full h-full block"></canvas>
+                </div>
+
+                <!-- Orbit Speed Controls -->
+                <div class="mt-4 flex items-center gap-4 bg-slate-900/90 p-4 rounded-xl border border-slate-800">
+                    <span class="text-xs text-amber-400 font-bold shrink-0">Orbital Thrust:</span>
+                    <input type="range" id="astro-speed-slider" min="1" max="100" value="20" oninput="astroModule.setSpeed(this.value)" class="flex-1 accent-amber-500 cursor-pointer">
+                    <button onclick="astroModule.checkOrbit()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 font-orbitron font-bold text-xs text-white uppercase tracking-wider shadow-md">
+                        Lock In Orbit <i class="fa-solid fa-satellite ml-1"></i>
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- SCREEN 6: SCIENCE TRIVIA BLITZ QUIZ -->
+        <main id="screen-quiz" class="hidden flex-1 flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <button onclick="gameEngine.returnToHub()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-left"></i> Exit Quiz
+                </button>
+                <div class="text-right">
+                    <span class="text-xs text-indigo-400 font-mono">SCIENCE MASTERY CHALLENGE</span>
+                    <h2 class="font-orbitron text-xl font-bold text-white">Science Madness Blitz Quiz</h2>
+                </div>
+            </div>
+
+            <div class="glass-panel flex-1 rounded-3xl p-6 flex flex-col justify-between border border-indigo-500/30 relative">
+                <!-- Quiz Progress Bar -->
+                <div class="mb-6">
+                    <div class="flex justify-between items-center text-xs font-mono mb-2">
+                        <span id="quiz-progress-text" class="text-indigo-300">Question 1 of 5</span>
+                        <span id="quiz-score-live" class="text-amber-400 font-bold">Points: +0</span>
+                    </div>
+                    <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                        <div id="quiz-progress-bar" class="h-full bg-gradient-to-r from-cyan-400 to-purple-500 w-1/5 transition-all duration-300"></div>
+                    </div>
+                </div>
+
+                <!-- Question Text -->
+                <div class="my-auto py-6">
+                    <span id="quiz-category-tag" class="text-[10px] font-mono uppercase px-3 py-1 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-800">
+                        PHYSICAL SCIENCE
+                    </span>
+                    <h3 id="quiz-question-text" class="font-orbitron text-xl sm:text-2xl font-bold text-white mt-4 leading-relaxed">
+                        What chemical element has the symbol 'O' and is essential for respiration?
+                    </h3>
+                </div>
+
+                <!-- Answer Options -->
+                <div id="quiz-options-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+                    <!-- Option buttons dynamically rendered -->
+                </div>
+            </div>
+        </main>
+
+        <!-- SCREEN 7: PRINTABLE CERTIFICATE & BADGE -->
+        <main id="screen-certificate" class="hidden flex-1 flex flex-col items-center justify-center py-4">
+            <div class="w-full max-w-3xl flex justify-between items-center mb-4">
+                <button onclick="gameEngine.returnToHub()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-left"></i> Back to Hub
+                </button>
+                <button onclick="window.print()" class="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-orbitron font-bold text-xs uppercase shadow-lg flex items-center gap-2">
+                    <i class="fa-solid fa-print"></i> Print Official Certificate
+                </button>
+            </div>
+
+            <!-- Printable Certificate Document -->
+            <div id="printable-certificate" class="w-full bg-slate-900 border-4 border-amber-500/80 rounded-3xl p-8 sm:p-12 text-center relative overflow-hidden shadow-2xl">
+                <!-- Decorative Corner Accents -->
+                <div class="absolute top-0 left-0 w-16 h-16 border-t-4 border-l-4 border-amber-400 rounded-tl-3xl"></div>
+                <div class="absolute top-0 right-0 w-16 h-16 border-t-4 border-r-4 border-amber-400 rounded-tr-3xl"></div>
+                <div class="absolute bottom-0 left-0 w-16 h-16 border-b-4 border-l-4 border-amber-400 rounded-bl-3xl"></div>
+                <div class="absolute bottom-0 right-0 w-16 h-16 border-b-4 border-r-4 border-amber-400 rounded-br-3xl"></div>
+
+                <!-- Header Seal -->
+                <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-amber-500/10 border-2 border-amber-400 text-amber-400 text-4xl mb-4">
+                    <i class="fa-solid fa-atom"></i>
+                </div>
+
+                <p class="font-mono text-xs uppercase tracking-widest text-amber-400 mb-1">OFFICIAL ACADEMIC CREDENTIAL</p>
+                <h2 class="font-orbitron font-black text-2xl sm:text-4xl text-white tracking-wider mb-2">CERTIFICATE OF SCIENCE MADNESS</h2>
+                <p class="text-slate-400 text-xs sm:text-sm max-w-lg mx-auto mb-6">This document officially certifies that</p>
+
+                <!-- Student Name Highlight -->
+                <div id="cert-student-name" class="font-orbitron text-2xl sm:text-3xl font-extrabold text-cyan-300 border-b-2 border-cyan-500/50 inline-block px-8 py-2 mb-4">
+                    STUDENT NAME
+                </div>
+
+                <div class="flex justify-center items-center gap-4 text-xs sm:text-sm text-slate-300 mb-6">
+                    <span>Grade Level: <strong id="cert-student-grade" class="text-amber-400">Grade 7</strong></span>
+                    <span>•</span>
+                    <span>Section: <strong id="cert-student-section" class="text-amber-400">Einstein</strong></span>
+                </div>
+
+                <p class="text-slate-300 text-xs sm:text-sm max-w-xl mx-auto leading-relaxed mb-8">
+                    has successfully completed the scientific inquiry modules in Chemistry, Physics Optics, DNA Genetics, and Astronomy Orbit Dynamics, proving exceptional lab assistant aptitude in Dr. Atom's Science Madness Laboratory.
+                </p>
+
+                <!-- Certificate Badges & Score -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-xl mx-auto mb-8 bg-slate-950/80 p-4 rounded-2xl border border-slate-800">
+                    <div>
+                        <div class="text-[10px] text-slate-500 uppercase">Total Score</div>
+                        <div id="cert-total-score" class="font-orbitron font-bold text-amber-400 text-lg">0 PTS</div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-slate-500 uppercase">Lab Rank</div>
+                        <div id="cert-lab-rank" class="font-orbitron font-bold text-cyan-400 text-xs mt-1">Junior Scientist</div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-slate-500 uppercase">Modules</div>
+                        <div id="cert-modules-done" class="font-orbitron font-bold text-emerald-400 text-lg">0 / 4</div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-slate-500 uppercase">Date Issued</div>
+                        <div id="cert-date" class="font-mono font-semibold text-slate-300 text-xs mt-1">2026-10-09</div>
+                    </div>
+                </div>
+
+                <!-- Signatures Footer -->
+                <div class="flex justify-between items-end max-w-lg mx-auto pt-4 border-t border-slate-800 text-xs">
+                    <div class="text-center">
+                        <div class="font-orbitron text-cyan-400 font-bold italic mb-1">Dr. Atom, Ph.D.</div>
+                        <div class="text-[10px] text-slate-500 uppercase">Head Mad Scientist</div>
+                    </div>
+                    <div class="w-12 h-12 rounded-full border border-amber-400/40 flex items-center justify-center text-amber-400 text-xl">
+                        <i class="fa-solid fa-award"></i>
+                    </div>
+                    <div class="text-center">
+                        <div class="font-orbitron text-purple-400 font-bold italic mb-1">Science Madness Board</div>
+                        <div class="text-[10px] text-slate-500 uppercase">Lab Director</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer Footer -->
+        <footer class="mt-8 text-center text-xs text-slate-500 py-3 border-t border-slate-900 flex flex-col sm:flex-row justify-between items-center gap-2">
+            <div>&copy; 2026 Science Madness - Interactive Educational Science Platform</div>
+            <div class="flex gap-4">
+                <span class="hover:text-slate-400 cursor-pointer" onclick="gameEngine.returnToHub()">Hub</span>
+                <span class="hover:text-slate-400 cursor-pointer" onclick="gameEngine.viewCertificate()">Badge</span>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+            }
+            playBeep(freq = 440, type = 'sine', duration = 0.1) {
+                if (!this.enabled) return;
+                try {
+                    this.init();
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch(e){}
+            }
+            playSuccess() {
+                this.playBeep(523.25, 'triangle', 0.15);
+                setTimeout(() => this.playBeep(659.25, 'triangle', 0.15), 100);
+                setTimeout(() => this.playBeep(783.99, 'triangle', 0.25), 200);
+            }
+            playFail() {
+                this.playBeep(300, 'sawtooth', 0.2);
+                setTimeout(() => this.playBeep(200, 'sawtooth', 0.3), 150);
+            }
+            playBubble() {
+                this.playBeep(600 + Math.random() * 300, 'sine', 0.08);
+            }
+        }
+        const sfx = new SoundFX();
+
+        class GameEngine {
+            constructor() {
+                this.profile = {
+                    name: '',
+                    grade: '',
+                    section: '',
+                    avatar: 'fa-user-astronaut',
+                    score: 0,
+                    completed: {
+                        chem: false,
+                        phys: false,
+                        bio: false,
+                        astro: false
+                    }
+                };
+            }
+
+            selectAvatar(iconClass, btnElement) {
+                this.profile.avatar = iconClass;
+                document.querySelectorAll('.avatar-btn').forEach(btn => {
+                    btn.classList.remove('border-cyan-500', 'text-cyan-400');
+                    btn.classList.add('border-transparent', 'text-slate-400');
+                });
+                btnElement.classList.remove('border-transparent', 'text-slate-400');
+                btnElement.classList.add('border-cyan-500', 'text-cyan-400');
+                sfx.playBeep(500, 'sine', 0.05);
+            }
+
+            handleRegister(e) {
+                e.preventDefault();
+                sfx.init();
+                
+                this.profile.name = document.getElementById('student-name').value.trim();
+                this.profile.grade = document.getElementById('student-grade').value;
+                this.profile.section = document.getElementById('student-section').value.trim();
+
+                if (!this.profile.name || !this.profile.grade || !this.profile.section) return;
+
+                // Update Display Badges
+                document.getElementById('display-player-name').textContent = this.profile.name;
+                document.getElementById('display-player-grade').textContent = this.profile.grade;
+                document.getElementById('display-player-section').textContent = 'Sec: ' + this.profile.section;
+                document.getElementById('badge-avatar-icon').innerHTML = `<i class="fa-solid ${this.profile.avatar}"></i>`;
+
+                // Show Badge & Switch Screen
+                document.getElementById('profile-badge-display').classList.remove('hidden');
+                document.getElementById('profile-badge-display').classList.add('flex');
+                
+                sfx.playSuccess();
+                this.switchScreen('hub');
+                this.updateScore(0);
+            }
+
+            switchScreen(screenId) {
+                const screens = ['registration', 'hub', 'chem', 'phys', 'bio', 'astro', 'quiz', 'certificate'];
+                screens.forEach(id => {
+                    const el = document.getElementById('screen-' + id);
+                    if (el) el.classList.add('hidden');
+                });
+                const target = document.getElementById('screen-' + screenId);
+                if (target) {
+                    target.classList.remove('hidden');
+                }
+
+                // Initialize specific canvas if needed
+                if (screenId === 'phys') physModule.init();
+                if (screenId === 'astro') astroModule.init();
+                if (screenId === 'chem') chemModule.init();
+                if (screenId === 'bio') bioModule.init();
+            }
+
+            returnToHub() {
+                sfx.playBeep(400, 'sine', 0.08);
+                this.switchScreen('hub');
+            }
+
+            updateScore(points) {
+                this.profile.score += points;
+                document.getElementById('display-score').textContent = this.profile.score + ' PTS';
+            }
+
+            markCompleted(moduleKey) {
+                this.profile.completed[moduleKey] = true;
+                const statusBadge = document.getElementById(`badge-status-${moduleKey}`);
+                if (statusBadge) {
+                    statusBadge.textContent = 'Completed!';
+                    statusBadge.className = 'text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-700';
+                }
+            }
+
+            toggleSound() {
+                sfx.enabled = !sfx.enabled;
+                const icon = document.getElementById('sound-icon');
+                if (sfx.enabled) {
+                    icon.className = 'fa-solid fa-volume-high text-cyan-400';
+                } else {
+                    icon.className = 'fa-solid fa-volume-xmark text-slate-500';
+                }
+            }
+
+            startModule(mod) {
+                sfx.playBeep(600, 'sine', 0.1);
+                this.switchScreen(mod);
+            }
+
+            startQuiz() {
+                sfx.playBeep(600, 'sine', 0.1);
+                quizModule.start();
+                this.switchScreen('quiz');
+            }
+
+            viewCertificate() {
+                sfx.playBeep(600, 'sine', 0.1);
+                
+                // Populate Certificate Data
+                document.getElementById('cert-student-name').textContent = this.profile.name || 'Student Assistant';
+                document.getElementById('cert-student-grade').textContent = this.profile.grade || 'Grade level';
+                document.getElementById('cert-student-section').textContent = this.profile.section || 'General';
+                document.getElementById('cert-total-score').textContent = this.profile.score + ' PTS';
+
+                let count = 0;
+                if (this.profile.completed.chem) count++;
+                if (this.profile.completed.phys) count++;
+                if (this.profile.completed.bio) count++;
+                if (this.profile.completed.astro) count++;
+                document.getElementById('cert-modules-done').textContent = `${count} / 4`;
+
+                let rank = "Junior Scientist";
+                if (this.profile.score >= 500) rank = "Master Quantum Genius";
+                else if (this.profile.score >= 300) rank = "Senior Lab Researcher";
+                else if (this.profile.score >= 100) rank = "Lab Specialist";
+                document.getElementById('cert-lab-rank').textContent = rank;
+
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('cert-date').textContent = today;
+
+                this.switchScreen('certificate');
+            }
+        }
+        const gameEngine = new GameEngine();
+
+        class ChemModule {
+            constructor() {
+                this.target = { name: "Water (H₂O)", recipe: { H: 2, O: 1 } };
+                this.added = [];
+                this.elements = [
+                    { symbol: 'H', name: 'Hydrogen', color: 'bg-cyan-900 border-cyan-500 text-cyan-300' },
+                    { symbol: 'O', name: 'Oxygen', color: 'bg-red-900 border-red-500 text-red-300' },
+                    { symbol: 'Na', name: 'Sodium', color: 'bg-amber-900 border-amber-500 text-amber-300' },
+                    { symbol: 'Cl', name: 'Chlorine', color: 'bg-emerald-900 border-emerald-500 text-emerald-300' }
+                ];
+            }
+
+            init() {
+                this.clearFlask();
+                this.renderButtons();
+            }
+
+            renderButtons() {
+                const btnContainer = document.getElementById('chem-element-buttons');
+                btnContainer.innerHTML = '';
+                this.elements.forEach(elem => {
+                    const btn = document.createElement('button');
+                    btn.className = `p-3 rounded-xl border flex flex-col items-center justify-center transition active:scale-95 ${elem.color}`;
+                    btn.innerHTML = `<span class="font-orbitron font-bold text-lg">${elem.symbol}</span><span class="text-[10px] opacity-80">${elem.name}</span>`;
+                    btn.onclick = () => this.addElement(elem.symbol);
+                    btnContainer.appendChild(btn);
+                });
+            }
+
+            addElement(symbol) {
+                this.added.push(symbol);
+                sfx.playBubble();
+                this.updateFlaskVisual();
+            }
+
+            clearFlask() {
+                this.added = [];
+                sfx.playBeep(300, 'sine', 0.1);
+                this.updateFlaskVisual();
+            }
+
+            updateFlaskVisual() {
+                const container = document.getElementById('chem-current-elements');
+                if (this.added.length === 0) {
+                    container.innerHTML = `<span class="text-xs text-slate-500 italic">No elements in beaker yet...</span>`;
+                } else {
+                    container.innerHTML = this.added.map(s => `<span class="px-3 py-1 rounded-lg bg-cyan-950 border border-cyan-500/50 text-cyan-300 font-bold font-mono text-xs">${s}</span>`).join(' + ');
+                }
+
+                // Adjust Liquid Height
+                const liquid = document.getElementById('chem-flask-liquid');
+                const fillPercent = Math.min(this.added.length * 20 + 20, 90);
+                liquid.style.height = fillPercent + '%';
+            }
+
+            react() {
+                const counts = {};
+                this.added.forEach(x => counts[x] = (counts[x] || 0) + 1);
+
+                if (counts['H'] === 2 && counts['O'] === 1 && Object.keys(counts).length === 2) {
+                    sfx.playSuccess();
+                    gameEngine.updateScore(100);
+                    gameEngine.markCompleted('chem');
+                    alertModal("REACTION SUCCESS!", "You synthesized Water (H₂O) perfectly! +100 Lab Points earned.");
+                } else {
+                    sfx.playFail();
+                    alertModal("REACTION FAILED!", "Incorrect chemical combination. Check the formula recipe and try again!");
+                }
+            }
+        }
+        const chemModule = new ChemModule();
+
+        class PhysModule {
+            constructor() {
+                this.canvas = null;
+                this.ctx = null;
+                this.angle = 45;
+            }
+
+            init() {
+                this.canvas = document.getElementById('phys-canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.resize();
+                this.draw();
+            }
+
+            resize() {
+                if (!this.canvas) return;
+                this.canvas.width = this.canvas.parentElement.clientWidth;
+                this.canvas.height = this.canvas.parentElement.clientHeight;
+            }
+
+            setMirrorAngle(val) {
+                this.angle = parseInt(val);
+                document.getElementById('mirror-angle-val').textContent = this.angle + '°';
+                this.draw();
+            }
+
+            adjustMirror(delta) {
+                this.angle = (this.angle + delta + 180) % 180;
+                document.getElementById('mirror-slider').value = this.angle;
+                document.getElementById('mirror-angle-val').textContent = this.angle + '°';
+                sfx.playBeep(400, 'sine', 0.05);
+                this.draw();
+            }
+
+            draw() {
+                if (!this.ctx) return;
+                const w = this.canvas.width;
+                const h = this.canvas.height;
+                this.ctx.clearRect(0, 0, w, h);
+
+                // Grid lines background
+                this.ctx.strokeStyle = '#1e293b';
+                this.ctx.lineWidth = 1;
+                for (let x = 0; x < w; x += 30) {
+                    this.ctx.beginPath(); this.ctx.moveTo(x, 0); this.ctx.lineTo(x, h); this.ctx.stroke();
+                }
+
+                // Emitter (Left)
+                const emitX = 40, emitY = h / 2;
+                this.ctx.fillStyle = '#06b6d4';
+                this.ctx.fillRect(emitX - 20, emitY - 15, 20, 30);
+
+                // Target (Right Top)
+                const targetX = w - 60, targetY = 50;
+                this.ctx.fillStyle = '#10b981';
+                this.ctx.beginPath();
+                this.ctx.arc(targetX, targetY, 20, 0, Math.PI * 2);
+                this.ctx.fill();
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.font = '10px Orbitron';
+                this.ctx.fillText("TARGET", targetX - 22, targetY + 30);
+
+                // Mirror (Center)
+                const mirrorX = w / 2, mirrorY = h / 2;
+                this.ctx.save();
+                this.ctx.translate(mirrorX, mirrorY);
+                this.ctx.rotate((this.angle * Math.PI) / 180);
+                this.ctx.strokeStyle = '#a855f7';
+                this.ctx.lineWidth = 6;
+                this.ctx.beginPath();
+                this.ctx.moveTo(-40, 0);
+                this.ctx.lineTo(40, 0);
+                this.ctx.stroke();
+                this.ctx.restore();
+
+                // Laser Beam
+                this.ctx.strokeStyle = '#ec4899';
+                this.ctx.lineWidth = 3;
+                this.ctx.shadowColor = '#ec4899';
+                this.ctx.shadowBlur = 10;
+                this.ctx.beginPath();
+                this.ctx.moveTo(emitX, emitY);
+                this.ctx.lineTo(mirrorX, mirrorY);
+
+                // Reflection bounce calculation
+                const rad = (this.angle * Math.PI) / 180;
+                const reflectX = mirrorX + Math.cos(rad * 2) * 300;
+                const reflectY = mirrorY - Math.sin(rad * 2) * 300;
+                this.ctx.lineTo(reflectX, reflectY);
+                this.ctx.stroke();
+                this.ctx.shadowBlur = 0;
+            }
+
+            fireLaser() {
+                // Check win condition (Angle near 135 deg reflections)
+                if (Math.abs(this.angle - 135) <= 5 || Math.abs(this.angle - 315) <= 5) {
+                    sfx.playSuccess();
+                    gameEngine.updateScore(100);
+                    gameEngine.markCompleted('phys');
+                    alertModal("OPTICS ALIGNED!", "Laser beam successfully redirected into the target sensor! +100 Lab Points.");
+                } else {
+                    sfx.playFail();
+                    alertModal("MISALIGNED!", "Laser missed the target sensor. Rotate the mirror angle and re-pulse!");
+                }
+            }
+        }
+        const physModule = new PhysModule();
+
+        class BioModule {
+            constructor() {
+                this.bases = ['A', 'T', 'C', 'G'];
+                this.currentBase = 'A';
+                this.pairsDone = 0;
+                this.matching = { 'A': 'T', 'T': 'A', 'C': 'G', 'G': 'C' };
+            }
+
+            init() {
+                this.pairsDone = 0;
+                this.nextBase();
+            }
+
+            nextBase() {
+                this.currentBase = this.bases[Math.floor(Math.random() * this.bases.length)];
+                document.getElementById('bio-current-base').textContent = this.currentBase;
+                document.getElementById('bio-pairs-count').textContent = `${this.pairsDone} / 5`;
+            }
+
+            pair(selected) {
+                if (selected === this.matching[this.currentBase]) {
+                    sfx.playSuccess();
+                    this.pairsDone++;
+                    document.getElementById('bio-feedback').textContent = "Correct base pair matched!";
+                    document.getElementById('bio-feedback').className = "text-center text-xs font-mono text-emerald-400 font-bold";
+                    
+                    if (this.pairsDone >= 5) {
+                        gameEngine.updateScore(100);
+                        gameEngine.markCompleted('bio');
+                        alertModal("GENOME SEQUENCED!", "You successfully completed the DNA sequence helix! +100 Lab Points.");
+                    } else {
+                        this.nextBase();
+                    }
+                } else {
+                    sfx.playFail();
+                    document.getElementById('bio-feedback').textContent = `Mismatch! ${this.currentBase} pairs with ${this.matching[this.currentBase]}. Try again!`;
+                    document.getElementById('bio-feedback').className = "text-center text-xs font-mono text-rose-400 font-bold";
+                }
+            }
+        }
+        const bioModule = new BioModule();
+
+        class AstroModule {
+            constructor() {
+                this.canvas = null;
+                this.ctx = null;
+                this.speed = 20;
+            }
+
+            init() {
+                this.canvas = document.getElementById('astro-canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.resize();
+                this.draw();
+            }
+
+            resize() {
+                if (!this.canvas) return;
+                this.canvas.width = this.canvas.parentElement.clientWidth;
+                this.canvas.height = this.canvas.parentElement.clientHeight;
+            }
+
+            setSpeed(val) {
+                this.speed = parseInt(val);
+                this.draw();
+            }
+
+            draw() {
+                if (!this.ctx) return;
+                const w = this.canvas.width;
+                const h = this.canvas.height;
+                const cx = w / 2, cy = h / 2;
+                this.ctx.clearRect(0, 0, w, h);
+
+                // Planet Center
+                this.ctx.fillStyle = '#f59e0b';
+                this.ctx.beginPath();
+                this.ctx.arc(cx, cy, 35, 0, Math.PI * 2);
+                this.ctx.fill();
+
+                // Target Orbit Ring (Green Zone)
+                const targetRadius = 110;
+                this.ctx.strokeStyle = '#10b981';
+                this.ctx.lineWidth = 12;
+                this.ctx.globalAlpha = 0.3;
+                this.ctx.beginPath();
+                this.ctx.arc(cx, cy, targetRadius, 0, Math.PI * 2);
+                this.ctx.stroke();
+                this.ctx.globalAlpha = 1.0;
+
+                // Current Calculated Orbit Ring
+                const currentRadius = 40 + this.speed * 2.5;
+                this.ctx.strokeStyle = '#06b6d4';
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.arc(cx, cy, currentRadius, 0, Math.PI * 2);
+                this.ctx.stroke();
+
+                // Satellite Graphic
+                const angle = Date.now() * 0.002;
+                const satX = cx + Math.cos(angle) * currentRadius;
+                const satY = cy + Math.sin(angle) * currentRadius;
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.beginPath();
+                this.ctx.arc(satX, satY, 6, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
+
+            checkOrbit() {
+                const currentRadius = 40 + this.speed * 2.5;
+                const targetRadius = 110;
+                if (Math.abs(currentRadius - targetRadius) <= 15) {
+                    sfx.playSuccess();
+                    gameEngine.updateScore(100);
+                    gameEngine.markCompleted('astro');
+                    alertModal("STABLE ORBIT ACHIEVED!", "Satellite successfully locked into planet orbit! +100 Lab Points.");
+                } else {
+                    sfx.playFail();
+                    alertModal("ORBITAL DECAY!", "Satellite velocity too fast/slow. Adjust thrust slider closer to target orbit zone.");
+                }
+            }
+        }
+        const astroModule = new AstroModule();
+
+        class QuizModule {
+            constructor() {
+                this.questions = [
+                    {
+                        category: "CHEMISTRY",
+                        q: "Which state of matter has a definite volume but no definite shape?",
+                        options: ["Solid", "Liquid", "Gas", "Plasma"],
+                        correct: 1
+                    },
+                    {
+                        category: "PHYSICS",
+                        q: "What fundamental force pulls objects toward the center of the Earth?",
+                        options: ["Magnetism", "Friction", "Gravity", "Tension"],
+                        correct: 2
+                    },
+                    {
+                        category: "BIOLOGY",
+                        q: "What organelle is known as the 'powerhouse' of the cell?",
+                        options: ["Nucleus", "Ribosome", "Mitochondria", "Golgi Body"],
+                        correct: 2
+                    },
+                    {
+                        category: "ASTRONOMY",
+                        q: "Which planet in our solar system is known as the Red Planet?",
+                        options: ["Venus", "Jupiter", "Mars", "Saturn"],
+                        correct: 2
+                    },
+                    {
+                        category: "EARTH SCIENCE",
+                        q: "What is the process by which plants convert light energy into chemical energy?",
+                        options: ["Respiration", "Photosynthesis", "Evaporation", "Osmosis"],
+                        correct: 1
+                    }
+                ];
+                this.index = 0;
+                this.score = 0;
+            }
+
+            start() {
+                this.index = 0;
+                this.score = 0;
+                this.renderQuestion();
+            }
+
+            renderQuestion() {
+                const qData = this.questions[this.index];
+                document.getElementById('quiz-category-tag').textContent = qData.category;
+                document.getElementById('quiz-question-text').textContent = qData.q;
+                document.getElementById('quiz-progress-text').textContent = `Question ${this.index + 1} of ${this.questions.length}`;
+                document.getElementById('quiz-progress-bar').style.width = `${((this.index + 1) / this.questions.length) * 100}%`;
+
+                const optContainer = document.getElementById('quiz-options-container');
+                optContainer.innerHTML = '';
+
+                qData.options.forEach((optText, i) => {
+                    const btn = document.createElement('button');
+                    btn.className = "p-4 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700 hover:border-indigo-500 text-left font-semibold text-sm text-slate-200 transition active:scale-98 flex items-center justify-between";
+                    btn.innerHTML = `<span>${optText}</span><i class="fa-regular fa-circle text-slate-600"></i>`;
+                    btn.onclick = () => this.answer(i);
+                    optContainer.appendChild(btn);
+                });
+            }
+
+            answer(selectedIndex) {
+                const qData = this.questions[this.index];
+                if (selectedIndex === qData.correct) {
+                    sfx.playSuccess();
+                    this.score += 50;
+                    document.getElementById('quiz-score-live').textContent = `Points: +${this.score}`;
+                } else {
+                    sfx.playFail();
+                }
+
+                this.index++;
+                if (this.index < this.questions.length) {
+                    this.renderQuestion();
+                } else {
+                    gameEngine.updateScore(this.score);
+                    alertModal("QUIZ COMPLETE!", `You scored ${this.score} PTS on the Science Madness Blitz Quiz! Total lab points updated.`);
+                    gameEngine.returnToHub();
+                }
+            }
+        }
+        const quizModule = new QuizModule();
+
+        function alertModal(title, msg) {
+            const existing = document.getElementById('custom-modal');
+            if (existing) existing.remove();
+
+            const modal = document.createElement('div');
+            modal.id = 'custom-modal';
+            modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in';
+            modal.innerHTML = `
+                <div class="glass-panel max-w-md w-full rounded-3xl p-6 border border-cyan-500/40 shadow-2xl text-center">
+                    <div class="w-14 h-14 rounded-2xl bg-cyan-950 border border-cyan-500/50 text-cyan-400 flex items-center justify-center text-2xl mx-auto mb-4">
+                        <i class="fa-solid fa-bell"></i>
+                    </div>
+                    <h3 class="font-orbitron font-bold text-xl text-white mb-2">${title}</h3>
+                    <p class="text-slate-300 text-xs sm:text-sm leading-relaxed mb-6">${msg}</p>
+                    <button onclick="document.getElementById('custom-modal').remove()" class="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 font-orbitron font-bold text-xs text-white uppercase tracking-wider shadow-lg">
+                        Dismiss Lab Notice
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function initBgCanvas() {
+            const canvas = document.getElementById('bg-canvas');
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            for (let i = 0; i < 40; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    radius: Math.random() * 3 + 1,
+                    color: Math.random() > 0.5 ? '#06b6d4' : '#8b5cf6',
+                    vx: (Math.random() - 0.5) * 0.5,
+                    vy: (Math.random() - 0.5) * 0.5
+                });
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    if (p.x < 0) p.x = canvas.width;
+                    if (p.x > canvas.width) p.x = 0;
+                    if (p.y < 0) p.y = canvas.height;
+                    if (p.y > canvas.height) p.y = 0;
+
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                if (document.getElementById('screen-phys').classList.contains('hidden') === false) physModule.draw();
+                if (document.getElementById('screen-astro').classList.contains('hidden') === false) astroModule.draw();
+
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        window.onload = function() {
+            initBgCanvas();
+        };
+    </script>
+</body>
+</html>
